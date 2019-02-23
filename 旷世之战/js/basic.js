@@ -24,6 +24,12 @@ function GameObject(obj){
     }
   }
 
+  this.createElement = function(element){
+    var ele = document.createElement(element);
+    gameObject.addElement(ele);
+    return ele;
+  }
+
   //创建盒子
   this.createDiv = function(id,className,position){
     var divBox = document.createElement('div');
