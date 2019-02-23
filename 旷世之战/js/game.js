@@ -20,82 +20,126 @@ var start_msg = ["野生的{%name%}跳了出来\n!!!","骚猪：就决定是你�
 
 var count = 0;
 
+var audio;
+
+var monster_list = ['刚哥哥','晓怡妈','陈总','范老大'];
+var c1,c2;
+var choose1,choose2;
+var info1,info2,start;
+
 function mainfunc(){
   main = new GameObject(document.getElementById('main'));
   main.asGameScreen();
 
-  var start = main.createDiv('game-start').setBox(270,300,200,50);
-  start.addText("开始游戏");
-  start.click(function(){
-    start.hid();
+  var start_ = main.createDiv('game-start').setBox(270,300,200,50);
+  start_.addText("开始游戏");
+  start_.click(function(){
+    start_.hid();
     choose_ch();
   });
+
+  audio = main.createDiv("play-audio",'center').setBox(0,720,80,30);
+  audio.addText("关闭音乐");
+  music_load();
+  audio.click(function(){
+    if(audio.text()=='关闭音乐'){
+      audio.text("开启音乐");
+      music_remove();
+    }else{
+      audio.text("关闭音乐");
+      music_load();
+    }
+  })
 }
+
+function music_load(){
+  if(!audio.music){
+    audio.music = main.createElement('audio');
+    audio.music.src = 'music/bg_music.mp3';
+  }
+
+  audio.music.play();
+}
+
+function music_remove(){
+  audio.music.pause();
+}
+
 
 function choose_ch(){
-  var choose1,choose2;
-  var c1,c2;
 
-  var info = main.createDiv('game-start').setBox(170,250,200,50);
-  info.addText("请选择己方");
+  info1 = main.createDiv('game-start').setBox(70,100,200,50);
+  info1.addText("请选择己方");
+  choose1 = main.createDiv(null,'text-center').setBox(170,100,200,300);
+  choose1.style.overflow = 'auto';
+  choose1.child_list = new Array();
+  for(var i=0;i<monster_list.length;++i){
+    var temp = choose1.createDiv(null,'text-center').setBox(i*50,0,195,50);
+    temp.addText(monster_list[i]);
+    temp.object.setAttribute('c1',i);
+    temp.click(function(){
+      c1 = this.getAttribute('c1');
+      for(var i=0;i<choose1.child_list.length;++i){
+        choose1.child_list[i].style.backgroundColor = '#FFFFFF';
+      }
+      this.style.backgroundColor =  '#61AFEF';
+    });
+    choose1.child_list.push(temp);
+  }
 
-  choose1 = main.createDiv('game-start').setBox(270,100,200,50);
-  choose1.addText("刚哥哥");
-  choose1.click(function(){
-    if(!c1){
-      c1 = 2;
-      info.text("请选择敌方");
-    }else{
-      choose1.hid();
-      choose2.hid();
-      c2 = 2;
-      game_load(c1,c2);
-    }
-  });
-  choose2 = main.createDiv('game-start').setBox(270,400,200,50);
-  choose2.addText("晓怡妈");
-  choose2.click(function(){
-    if(!c1){
-      c1 = 1;
-      info.text("请选择敌方");
-    }else{
-      choose1.hid();
-      choose2.hid();
-      c2 = 1;
-      game_load(c1,c2);
-    }
+  info2 = main.createDiv('game-start').setBox(70,400,200,50);
+  info2.addText("请选择敌方");
+  choose2 = main.createDiv(null,'text-center').setBox(170,400,200,300);
+  choose2.style.overflow = 'auto';
+  choose2.child_list = new Array();
+  for(var i=0;i<monster_list.length;++i){
+    var temp = choose2.createDiv(null,'text-center').setBox(i*50,0,195,50);
+    temp.addText(monster_list[i]);
+    temp.object.setAttribute('c2',i);
+    temp.click(function(){
+      c2 = this.getAttribute('c2');
+      for(var i=0;i<choose1.child_list.length;++i){
+        choose2.child_list[i].style.backgroundColor = '#FFFFFF';
+      }
+      this.style.backgroundColor =  '#61AFEF';
+    });
+    choose2.child_list.push(temp);
+  }
+
+  start = main.createDiv('game-start','text-center').setBox(400,300,200,50);
+  start.addText('开始');
+  start.click(function(){
+    info1.hid();
+    info2.hid();
+    choose1.hid();
+    choose2.hid();
+    start.hid();
+    game_load();
   });
 }
 
-function game_load(c1,c2){
+function game_load(){
   main.createImg("img/bg.jpg").setBox(0,0,main.gameScreenWidth,main.gameScreenHeight);
 
   //加载人物
     //玩家
-  player = main.createImg("img/player.png").setBox(220,150,150,200);
+  player = main.createImg("img/saozhu.png").setBox(220,150,150,200);
+
+  console.log(c1+'---'+c2);
     //自己
-    if(c1==2){
-      self = Ganggege(self);
-    }else if(c1==1){
-      self = Xiaoyima(self);
-    }
+  self = create_monster(c1);
+  console.log(self);
+  self.name_div.hid();
+  self.hp_num.obj.hid();
     //敌人
-    if(c2==2){
-      enemy = Ganggege(self,1);
-    }else if(c2==1){
-      enemy = Xiaoyima(self,1);
-    }
+  enemy = create_monster(c2,1);
 
   var skills;
 
+  enemy.load_skills(enemy,self);
 
-  skills = new Skills(enemy,self);
-  enemy.skills = skills;
-  enemy.load_skills();
+  self.load_skills(self,enemy);
 
-  skills = new Skills(self,enemy);
-  self.skills = skills;
-  self.load_skills();
 
   load_skill();
   load_menu();
@@ -174,7 +218,41 @@ function load_menu(){
   run = fight_menu.createDiv(null,"button").setBox(60,120,100,50);
   run.createDiv().addText("逃跑");
   run.click(function(){
-    show_msg("可是并没什卵用");
+    if(self.spacial=='运动健将'){
+      show_msg(self.name+"试图逃跑",function(){
+        show_msg(self.name+"跑掉了了。。。。。。\n————骚猪只好自己上了",function(){
+          self.name_div.hid();
+          self.hp.hp_scoll.hid();
+          self.hp.bg.hid();
+          self.hp_num.obj.hid();
+          self.body.moveTo(-150,220,500,function(){
+            self.body.hid();
+
+            self = create_monster(-1);
+            self.load_skills(self,enemy);
+            enemy.load_skills(enemy,self)
+            main.object.removeChild(skillBox.object);
+            load_skill();
+            main.object.removeChild(fight_menu.object);
+            load_menu();
+
+            self.hp_num.obj.hid();
+            self.name_div.hid();
+            self.body.moveTo(150,220,500,function(){
+              fight_menu.show();
+              msgbox.hid();
+              self.name_div.show();
+              self.hp_num.obj.show();
+            })
+          });
+        })
+      });
+    }else{
+        show_msg(self.name+"试图逃跑",function(){
+          show_msg("可是似乎并跑不过对方！！！\n——————对方追上来了！！！");
+          enemy_round();
+        });
+    }
   });
 }
 
@@ -199,6 +277,8 @@ function load_msg_box(){
 
           fight_menu.show();
           msgbox.hid();
+          self.name_div.show();
+          self.hp_num.obj.show();
 
           msgbox.click(function(){
             msgbox.hid();
@@ -212,11 +292,19 @@ function load_msg_box(){
   });
 }
 
-function show_msg(msg){
+function show_msg(msg,func){
   fight_menu.hid();
   skillBox.hid();
   msgbox.text(msg);
   msgbox.show();
+  if(func){
+    msgbox.click(func);
+  }else{
+    msgbox.click(function(){
+      msgbox.hid();
+      fight_menu.show();
+    });
+  }
 }
 
 
@@ -226,14 +314,14 @@ function enemy_round(){
   skill = enemy.skills.list[num];
   msgbox.click(function(){
     if(enemy.hp.now==0){
-      show_msg("晓怡妈倒下了\n胜利者是刚哥哥！！！");
+      show_msg(enemy.name+"倒下了\n胜利者是"+self.name+"！！！");
       enemy.body.moveTo(800,-200,500,enemy.body.hid);
       msgbox.click(gameover);
       return;
     }
     skill.use();
     if(self.hp.now==0){
-      show_msg("刚哥哥倒下了！\n迷人的刚哥哥竟输给了晓怡妈！");
+      show_msg(self.name+"倒下了\n胜利者是"+enemy.name+"！！！");
       self.body.moveTo(-150,600,500,self.body.hid);
       msgbox.click(gameover);
       return;
@@ -250,5 +338,28 @@ function gameover(){
   var flag = confirm("游戏结束，是否重新开始？");
   if(flag){
     window.location.reload();
+  }
+}
+
+function create_monster(n,enemy){
+  switch(parseInt(n))
+  {
+  case -1:
+    return Saozhu(enemy)
+    break;
+  case 0:
+    return Ganggege(enemy);
+    break;
+  case 1:
+    return Xiaoyima(enemy);
+    break;
+  case 2:
+    return Chenzong(enemy);
+    break;
+  case 3:
+    return Laoda(enemy);
+    break;
+  default:
+    return Ganggege(enemy);
   }
 }
